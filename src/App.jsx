@@ -12,6 +12,10 @@ export default function App() {
 
   const [params, setParams] = useState({
     erosion_enabled: true,
+    mesh_res: 256,
+    water_level: 0.12,
+    debug_mode: 0, // 0: Realistic, 1: Heightmap, 2: Cell Grids & Pivots
+    debug_octave: 0,
     u_erosion_scale: 0.15,
     u_erosion_strength: 0.22,
     u_gully_weight: 0.5,
@@ -82,7 +86,7 @@ export default function App() {
             </button>
           )}
 
-          <div className="section-title">Pipeline Stage</div>
+          <div className="section-title">Pipeline & Render Settings</div>
           <div className="toggle-group">
             <label htmlFor="toggle-erosion">Enable Phacelle Erosion</label>
             <input
@@ -93,10 +97,51 @@ export default function App() {
             />
           </div>
 
+          <div className="control-group">
+            <label>Mesh Resolution <span>{params.mesh_res}x{params.mesh_res}</span></label>
+            <input
+              type="range" min="32" max="512" step="32"
+              value={params.mesh_res}
+              onChange={(e) => updateParam('mesh_res', parseInt(e.target.value))}
+            />
+          </div>
+
+          <div className="control-group">
+            <label>Water Level <span>{params.water_level}</span></label>
+            <input
+              type="range" min="0.0" max="0.5" step="0.01"
+              value={params.water_level}
+              onChange={(e) => updateParam('water_level', parseFloat(e.target.value))}
+            />
+          </div>
+
+          <div className="control-group">
+            <label>Draw Mode</label>
+            <select
+              style={{ width: '100%', padding: '6px', background: '#26262e', color: '#fff', border: '1px solid #363642', borderRadius: '4px' }}
+              value={params.debug_mode}
+              onChange={(e) => updateParam('debug_mode', parseInt(e.target.value))}
+            >
+              <option value={0}>Realistic Shading</option>
+              <option value={1}>Raw Heightmap</option>
+              <option value={2}>Cell Grids & Pivots (Debug)</option>
+            </select>
+          </div>
+
+          {params.debug_mode === 2 && (
+            <div className="control-group">
+              <label>Debug Octave Grid <span>Octave {params.debug_octave}</span></label>
+              <input
+                type="range" min="0" max={params.u_octaves - 1} step="1"
+                value={params.debug_octave}
+                onChange={(e) => updateParam('debug_octave', parseInt(e.target.value))}
+              />
+            </div>
+          )}
+
           {params.erosion_enabled && (
             <>
               <div className="section-title">Erosion Parameters</div>
-
               <div className="control-group">
                 <label>Erosion Scale <span>{params.u_erosion_scale}</span></label>
                 <input
