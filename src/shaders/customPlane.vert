@@ -1,41 +1,48 @@
+// customPlane.vert
+uniform sampler2D uTexture;
+uniform float uMaxHeight;
 uniform float uTime;
+
 varying vec2 vUv;
 varying float vElevation;
 varying vec3 vNormal;
+varying float vSlope;
+
+struct TerrainData {
+  float height;
+  vec2 gradient;
+};
+
+TerrainData getTerrainData(vec2 uv) {
+  vec2 texelSize = vec2(1.0 / 128.0);
+
+  float hL = texture2D(uTexture, uv - vec2(texelSize.x, 0.0)).r * uMaxHeight;
+  float hR = texture2D(uTexture, uv + vec2(texelSize.x, 0.0)).r * uMaxHeight;
+  float hD = texture2D(uTexture, uv - vec2(0.0, texelSize.y)).r * uMaxHeight;
+  float hU = texture2D(uTexture, uv + vec2(0.0, texelSize.y)).r * uMaxHeight;
+
+  float height = texture2D(uTexture, uv).r * uMaxHeight;
+  vec2 gradient = vec2(hL - hR, hD - hU);
+
+  return TerrainData(height, gradient);
+}
 
 void main() {
-    vUv = uv;
+  vUv = uv;
 
-    vec4 modelPosition = modelMatrix * vec4(position, 1.0);
+  TerrainData terrain = getTerrainData(uv);
 
-    // Current wave equation parameters
-    float freq = 1.0;
-    float speed = 0.5;
-    float amp = 0.25;
+  vec4 modelPosition = modelMatrix * vec4(position, 1.0);
+  modelPosition.y += terrain.height;
 
-    float sx = sin(modelPosition.x * freq + uTime * speed);
-    float cx = cos(modelPosition.x * freq + uTime * speed);
-    float sz = sin(modelPosition.z * freq + uTime * speed);
-    float cz = cos(modelPosition.z * freq + uTime * speed);
+  // Build normal directly from gradient
+  vec3 objectNormal = normalize(vec3(terrain.gradient.x, 2.0, terrain.gradient.y));
+  vNormal = normalize(mat3(modelMatrix) * objectNormal);
 
-    // Calculate height displacement
-    float elevation = sx * sz * amp;
-    modelPosition.y += elevation;
+  vec4 viewPosition = viewMatrix * modelPosition;
+  gl_Position = projectionMatrix * viewPosition;
 
-    // Analytical partial derivatives for normal calculation: dy/dx and dy/dz
-    float dydx = cx * sz * freq * amp;
-    float dydz = sx * cz * freq * amp;
-
-    // Un-displaced plane normal points UP (0, 1, 0)
-    // Tangents: T_x = (1, dydx, 0), T_z = (0, dydz, 1)
-    // Normal = normalize(T_z x T_x)
-    vec3 objectNormal = normalize(vec3(-dydx, 1.0, -dydz));
-
-    // Transform normal to view space for correct light calculations
-    vNormal = normalize(mat3(modelMatrix) * objectNormal);
-
-    vec4 viewPosition = viewMatrix * modelPosition;
-    gl_Position = projectionMatrix * viewPosition;
-
-    vElevation = elevation;
+  // Compute slope magnitude on demand right when assigning to the varying
+  vElevation = terrain.height / uMaxHeight;
+  vSlope = length(terrain.gradient);
 }

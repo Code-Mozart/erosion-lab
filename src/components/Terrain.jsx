@@ -1,13 +1,36 @@
-import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
-import { useState } from "react";
+import { extend, useFrame } from "@react-three/fiber";
+import { useRef, useState, useEffect } from "react";
+import { CustomPlaneMaterial } from "../materials/customPlaneMaterial";
+import { useTerrainStore } from "../store/useTerrainStore";
+
+extend({ CustomPlaneMaterial });
 
 export default function Terrain() {
   const [isWireframe, setIsWireframe] = useState(false);
   const materialRef = useRef();
   const pointerDownPos = useRef({ x: 0, y: 0 });
 
-  // Update uniforms in the render loop
+  // Store subscriptions
+  const heightmap = useTerrainStore((s) => s.texture);
+  const maxHeight = useTerrainStore((s) => s.maxHeight);
+  const resolution = useTerrainStore((s) => s.resolution);
+  const setMaterialRef = useTerrainStore((s) => s.setMaterialRef);
+
+  // Register the material ref in Zustand so reloadShader can access it
+  useEffect(() => {
+    if (materialRef.current) {
+      setMaterialRef(materialRef.current);
+    }
+  }, [setMaterialRef]);
+
+  // Update uniforms when store properties change
+  useEffect(() => {
+    if (materialRef.current) {
+      if (heightmap) materialRef.current.uTexture = heightmap;
+      materialRef.current.uMaxHeight = maxHeight;
+    }
+  }, [heightmap, maxHeight]);
+
   useFrame((state, delta) => {
     if (materialRef.current) {
       materialRef.current.uTime += delta * 1.4;
@@ -15,18 +38,15 @@ export default function Terrain() {
   });
 
   const handlePointerDown = (e) => {
-    if (e.button != 0) return;
+    if (e.button !== 0) return;
     pointerDownPos.current = { x: e.clientX, y: e.clientY };
   };
 
   const handlePointerUp = (e) => {
-    if (e.button != 0) return;
+    if (e.button !== 0) return;
     const dx = e.clientX - pointerDownPos.current.x;
     const dy = e.clientY - pointerDownPos.current.y;
-    const distance = Math.hypot(dx, dy);
-
-    // Only toggle wireframe if mouse moved less than 3-5 pixels (a intentional click)
-    if (distance < 5) {
+    if (Math.hypot(dx, dy) < 5) {
       setIsWireframe((prev) => !prev);
     }
   };
@@ -38,10 +58,11 @@ export default function Terrain() {
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
     >
-      <planeGeometry args={[20, 20, 32, 32]} />
+      <planeGeometry args={[20, 20, resolution, resolution]} />
       <customPlaneMaterial
         ref={materialRef}
-        uColor="#67d5e9"
+        uTexture={heightmap || null}
+        uMaxHeight={maxHeight}
         wireframe={isWireframe}
       />
     </mesh>
