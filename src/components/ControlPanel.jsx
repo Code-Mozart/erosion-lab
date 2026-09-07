@@ -10,17 +10,16 @@ export default function ControlPanel() {
 
   return (
     <div className="control-panel">
-      <label style={{ fontSize: "14px", fontWeight: "bold" }}>
+      <label>
         Heightmap Image:
         <input
           type="file"
           accept="image/*"
           onChange={(e) => uploadTexture(e.target.files[0])}
-          style={{ display: "block", marginTop: "4px" }}
         />
       </label>
 
-      <label style={{ fontSize: "14px", fontWeight: "bold" }}>
+      <label>
         Height Scale: {maxHeight.toFixed(1)}
         <input
           type="range"
@@ -29,11 +28,10 @@ export default function ControlPanel() {
           step="0.1"
           value={maxHeight}
           onChange={(e) => setMaxHeight(parseFloat(e.target.value))}
-          style={{ display: "block", width: "100%", marginTop: "4px" }}
         />
       </label>
 
-      <label style={{ fontSize: "14px", fontWeight: "bold" }}>
+      <label>
         Resolution: {resolution}
         <input
           type="range"
@@ -42,24 +40,10 @@ export default function ControlPanel() {
           step="1"
           value={resolution}
           onChange={(e) => setResolution(parseInt(e.target.value))}
-          style={{ display: "block", width: "100%", marginTop: "4px" }}
         />
       </label>
 
-      <button
-        onClick={reloadShader}
-        style={{
-          padding: "8px 12px",
-          background: "#2563eb",
-          color: "white",
-          border: "none",
-          borderRadius: "4px",
-          fontWeight: "bold",
-          cursor: "pointer",
-        }}
-      >
-        Reload Shader
-      </button>
+      <button onClick={reloadShader}>Reload Shader</button>
     </div>
   );
 }

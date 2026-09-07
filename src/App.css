@@ -6,8 +6,8 @@
 
 .control-panel {
   position: absolute;
-  top: 20;
-  left: 20;
+  top: 16px;
+  left: 16px;
   z-index: 10;
   display: flex;
   flex-direction: column;
@@ -18,4 +18,35 @@
   border-radius: 8px;
   backdrop-filter: blur(4px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+body {
+  font-size: 12pt;
+  text-align: start;
+}
+
+label {
+  text-align: start;
+  border-radius: 4px;
+  padding: 4px;
+}
+
+input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+}
+
+button {
+  padding: 8px 12px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #3f79f8;
 }
