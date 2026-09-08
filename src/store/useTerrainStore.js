@@ -1,8 +1,10 @@
 import { create } from "zustand";
 import * as THREE from "three";
 
+export const MAX_HEIGHT_BOUNDS = [0.0, 1.0];
+
 export const useTerrainStore = create((set, get) => ({
-  maxHeight: 2.5,
+  maxHeight: 0.25,
   resolution: 32,
   texture: null,
   shaderVersion: 0,

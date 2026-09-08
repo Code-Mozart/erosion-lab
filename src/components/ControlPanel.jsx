@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useTerrainStore } from "../store/useTerrainStore";
+import { MAX_HEIGHT_BOUNDS, useTerrainStore } from "../store/useTerrainStore";
 
 export default function ControlPanel() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -45,12 +45,12 @@ export default function ControlPanel() {
       </label>
 
       <label>
-        Height Scale: {maxHeight.toFixed(1)}
+        Height Scale: {maxHeight.toFixed(2)}
         <input
           type="range"
-          min="0"
-          max="10"
-          step="0.1"
+          min={MAX_HEIGHT_BOUNDS[0]}
+          max={MAX_HEIGHT_BOUNDS[1]}
+          step={getStepwidth(MAX_HEIGHT_BOUNDS, 100)}
           value={maxHeight}
           onChange={(e) => setMaxHeight(parseFloat(e.target.value))}
         />
@@ -85,4 +85,8 @@ export default function ControlPanel() {
       <button onClick={reloadShader}>Reload Shader</button>
     </>,
   );
+}
+
+function getStepwidth(bounds, steps) {
+  return (bounds[1] - bounds[0]) / steps;
 }

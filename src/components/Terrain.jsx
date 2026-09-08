@@ -1,9 +1,13 @@
 import { extend, useFrame } from "@react-three/fiber";
 import { useRef, useState, useEffect } from "react";
 import { CustomPlaneMaterial } from "../materials/customPlaneMaterial";
-import { useTerrainStore } from "../store/useTerrainStore";
+import { MAX_HEIGHT_BOUNDS, useTerrainStore } from "../store/useTerrainStore";
+import { useMemo } from "react";
+import { remap } from "../utils/mathUtils";
 
 extend({ CustomPlaneMaterial });
+
+const DEFAULT_PLANE_SIZE = 10;
 
 export default function Terrain() {
   const [isWireframe, setIsWireframe] = useState(false);
@@ -16,6 +20,25 @@ export default function Terrain() {
   const resolution = useTerrainStore((s) => s.resolution);
   const shaderVersion = useTerrainStore((s) => s.shaderVersion);
   const debugMode = useTerrainStore((s) => s.debugMode);
+
+  const [planeWidth, planeHeight] = useMemo(() => {
+    if (!heightmap || !heightmap.image) {
+      return [DEFAULT_PLANE_SIZE, DEFAULT_PLANE_SIZE];
+    }
+
+    const { width, height } = heightmap.image;
+    return [Math.round(width), Math.round(height)];
+  }, [heightmap]);
+
+  const scaledMaxHeight = useMemo(() => {
+    return remap(
+      maxHeight,
+      MAX_HEIGHT_BOUNDS[0],
+      MAX_HEIGHT_BOUNDS[1],
+      0.0,
+      Math.max(planeWidth, planeHeight),
+    );
+  }, [planeWidth, planeHeight, maxHeight]);
 
   useFrame((state, delta) => {
     if (materialRef.current) {
@@ -44,12 +67,12 @@ export default function Terrain() {
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
     >
-      <planeGeometry args={[20, 20, resolution, resolution]} />
+      <planeGeometry args={[planeWidth, planeHeight, resolution, resolution]} />
       <customPlaneMaterial
         key={shaderVersion}
         ref={materialRef}
         uTexture={heightmap || null}
-        uMaxHeight={maxHeight}
+        uMaxHeight={scaledMaxHeight}
         uDebugMode={debugMode}
         wireframe={isWireframe}
       />
