@@ -17,20 +17,6 @@ export default function Terrain() {
   const shaderVersion = useTerrainStore((s) => s.shaderVersion);
   const debugMode = useTerrainStore((s) => s.debugMode);
 
-  // Update uniforms when store properties change
-  useEffect(() => {
-    if (materialRef.current) {
-      if (heightmap) materialRef.current.uTexture = heightmap;
-      materialRef.current.uMaxHeight = maxHeight;
-    }
-  }, [heightmap, maxHeight]);
-
-  useEffect(() => {
-    if (materialRef.current) {
-      materialRef.current.uDebugMode = debugMode;
-    }
-  }, [debugMode]);
-
   useFrame((state, delta) => {
     if (materialRef.current) {
       materialRef.current.uTime += delta * 1.4;
@@ -64,6 +50,7 @@ export default function Terrain() {
         ref={materialRef}
         uTexture={heightmap || null}
         uMaxHeight={maxHeight}
+        uDebugMode={debugMode}
         wireframe={isWireframe}
       />
     </mesh>

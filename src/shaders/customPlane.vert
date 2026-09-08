@@ -1,4 +1,3 @@
-// customPlane.vert
 uniform sampler2D uTexture;
 uniform float uMaxHeight;
 uniform float uTime;
@@ -6,7 +5,7 @@ uniform float uTime;
 varying vec2 vUv;
 varying float vElevation;
 varying vec3 vNormal;
-varying float vSlope;
+varying vec2 vGradient;
 
 struct TerrainData {
   float height;
@@ -32,17 +31,17 @@ void main() {
 
   TerrainData terrain = getTerrainData(uv);
 
-  vec4 modelPosition = modelMatrix * vec4(position, 1.0);
-  modelPosition.y += terrain.height;
+  vec3 displacedPosition = position;
+  displacedPosition.z += terrain.height;
 
-  // Build normal directly from gradient
-  vec3 objectNormal = normalize(vec3(terrain.gradient.x, 2.0, terrain.gradient.y));
+  vec4 modelPosition = modelMatrix * vec4(displacedPosition, 1.0);
+
+  vec3 objectNormal = normalize(vec3(terrain.gradient.x, terrain.gradient.y, 2.0));
   vNormal = normalize(mat3(modelMatrix) * objectNormal);
 
   vec4 viewPosition = viewMatrix * modelPosition;
   gl_Position = projectionMatrix * viewPosition;
 
-  // Compute slope magnitude on demand right when assigning to the varying
   vElevation = terrain.height / uMaxHeight;
-  vSlope = length(terrain.gradient);
+  vGradient = terrain.gradient;
 }

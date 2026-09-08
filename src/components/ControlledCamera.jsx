@@ -17,7 +17,7 @@ export default function ControlledCamera() {
       ref={controlsRef}
       makeDefault
       screenSpacePanning={false}
-      minPolarAngle={MathUtils.degToRad(5)}
+      minPolarAngle={MathUtils.degToRad(5.0)}
       maxPolarAngle={MathUtils.degToRad(89.99)}
     />
   );

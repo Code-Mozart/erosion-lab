@@ -76,7 +76,9 @@ export default function ControlPanel() {
         >
           <option value={0}>Shaded Terrain</option>
           <option value={1}>Elevation Map</option>
-          <option value={2}>Normal Vectors</option>
+          <option value={2}>Gradients</option>
+          <option value={3}>Steepness</option>
+          <option value={4}>Normals</option>
         </select>
       </label>
 
