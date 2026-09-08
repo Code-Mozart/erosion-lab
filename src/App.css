@@ -20,6 +20,11 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+.control-panel p {
+  font-size: 0.8em;
+  user-select: none;
+}
+
 body {
   font-size: 12pt;
   text-align: start;
@@ -31,7 +36,7 @@ label {
   padding: 4px;
 }
 
-input {
+input, select {
   display: block;
   width: 100%;
   margin-top: 4px;
