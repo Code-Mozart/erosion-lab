@@ -24,7 +24,7 @@ export const useTerrainStore = create((set, get) => ({
     if (!file) return;
     const url = URL.createObjectURL(file);
     new THREE.TextureLoader().load(url, (loaded) => {
-      loaded.colorSpace = THREE.SRGBColorSpace;
+      loaded.colorSpace = THREE.NoColorSpace;
       set({ texture: loaded });
     });
   },

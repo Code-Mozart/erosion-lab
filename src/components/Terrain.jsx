@@ -7,7 +7,7 @@ import { remap } from "../utils/mathUtils";
 
 extend({ CustomPlaneMaterial });
 
-const DEFAULT_PLANE_SIZE = 10;
+const DEFAULT_PLANE_SIZE = 10.0;
 
 export default function Terrain() {
   const [isWireframe, setIsWireframe] = useState(false);
@@ -27,7 +27,20 @@ export default function Terrain() {
     }
 
     const { width, height } = heightmap.image;
-    return [Math.round(width), Math.round(height)];
+
+    if (width > height) {
+      const aspectRatio = height / width;
+      return [
+        Math.round(DEFAULT_PLANE_SIZE),
+        Math.round(DEFAULT_PLANE_SIZE) * aspectRatio,
+      ];
+    } else {
+      const aspectRatio = width / height;
+      return [
+        Math.round(DEFAULT_PLANE_SIZE) * aspectRatio,
+        Math.round(DEFAULT_PLANE_SIZE),
+      ];
+    }
   }, [heightmap]);
 
   const scaledMaxHeight = useMemo(() => {
