@@ -2,6 +2,7 @@ uniform sampler2D uTexture;
 uniform float uMaxHeight;
 uniform float uTime;
 uniform float uCellSize;
+uniform float uFrequency;
 
 varying vec2 vUv;
 varying float vElevation;
@@ -35,7 +36,7 @@ WorleyData worleyNoise(vec2 p, float cellSize) {
     for (int x = -1; x <= 1; x++) {
       vec2 offset = vec2(float(x), float(y));
       vec2 cell = centerCell + offset;
-      vec2 jitter = hash22(cell);
+      vec2 jitter = hash22(cell + vec2(1.2355e5, -1.143e2));
       vec2 pivot = (cell + jitter) * cellSize;
 
       float distance = length(p - pivot);
@@ -63,7 +64,7 @@ TerrainData getTerrainData(vec2 uv) {
   return TerrainData(height, gradient);
 }
 
-TerrainData octave(TerrainData terrain, vec2 p, float frequency, float amplitude) {
+TerrainData octave(TerrainData terrain, vec2 p, float frequency, float cellSize, float amplitude) {
   // 1. Get length of current gradient (steepness)
   float len = length(terrain.gradient);
   
@@ -74,7 +75,7 @@ TerrainData octave(TerrainData terrain, vec2 p, float frequency, float amplitude
   vec2 perp = vec2(-terrain.gradient.y, terrain.gradient.x) / len;
   
   // 3. Project position to get distance across the stripe
-  WorleyData worley = worleyNoise(p, uCellSize);
+  WorleyData worley = worleyNoise(p, cellSize);
   float d = dot(p - worley.cellPivot, perp);
   
   // 4. Height offset (Cosine wave)
@@ -93,7 +94,8 @@ TerrainData octave(TerrainData terrain, vec2 p, float frequency, float amplitude
 TerrainData erode(TerrainData terrain, vec2 p) {
   int octaves = 1;
 
-  float frequency = 5.0;
+  float frequency = uFrequency;
+  float cellSize = uCellSize;
   float amplitude = 0.2;
 
   float lacunarity = 2.0;
@@ -101,9 +103,10 @@ TerrainData erode(TerrainData terrain, vec2 p) {
 
   int i = 0;
   while (i < octaves) {
-    terrain = octave(terrain, p, frequency, amplitude);
+    terrain = octave(terrain, p, frequency, cellSize, amplitude);
 
     frequency *= lacunarity;
+    cellSize /= lacunarity;
     amplitude *= persistence;
     i += 1;
   }

@@ -13,8 +13,8 @@ export default function ControlPanel() {
   const debugMode = useTerrainStore((s) => s.debugMode);
   const setDebugMode = useTerrainStore((s) => s.setDebugMode);
 
-  const cellSize = useTerrainStore((s) => s.cellSize);
-  const setCellSize = useTerrainStore((s) => s.setCellSize);
+  const frequency = useTerrainStore((s) => s.frequency);
+  const setFrequency = useTerrainStore((s) => s.setFrequency);
 
   const handlePanelClick = (e) => {
     // Ignore clicks if they happened on or inside an input, select, button, or label
@@ -72,14 +72,14 @@ export default function ControlPanel() {
       </label>
 
       <label>
-        CellSize: {cellSize}
+        Frequency: {frequency}
         <input
           type="range"
-          min="0.01"
-          max="5.0"
-          step="0.01"
-          value={cellSize}
-          onChange={(e) => setCellSize(parseFloat(e.target.value))}
+          min="0.1"
+          max="10.0"
+          step="0.1"
+          value={frequency}
+          onChange={(e) => setFrequency(parseFloat(e.target.value))}
         />
       </label>
 
