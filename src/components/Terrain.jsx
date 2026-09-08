@@ -20,6 +20,7 @@ export default function Terrain() {
   const resolution = useTerrainStore((s) => s.resolution);
   const shaderVersion = useTerrainStore((s) => s.shaderVersion);
   const debugMode = useTerrainStore((s) => s.debugMode);
+  const cellSize = useTerrainStore((s) => s.cellSize);
 
   const [planeWidth, planeHeight] = useMemo(() => {
     if (!heightmap || !heightmap.image) {
@@ -87,6 +88,7 @@ export default function Terrain() {
         uTexture={heightmap || null}
         uMaxHeight={scaledMaxHeight}
         uDebugMode={debugMode}
+        uCellSize={cellSize}
         wireframe={isWireframe}
       />
     </mesh>

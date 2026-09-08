@@ -1,16 +1,53 @@
 uniform sampler2D uTexture;
 uniform float uMaxHeight;
 uniform float uTime;
+uniform float uCellSize;
 
 varying vec2 vUv;
 varying float vElevation;
 varying vec3 vNormal;
 varying vec2 vGradient;
+varying vec2 vCellID;
 
 struct TerrainData {
   float height;
   vec2 gradient;
 };
+
+struct WorleyData {
+  vec2 cellPivot;
+  float distance;
+};
+
+vec2 hash22(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.xx + p3.yz) * p3.zy);
+}
+
+WorleyData worleyNoise(vec2 p, float cellSize) {
+  vec2 centerCell = floor(p / cellSize);
+
+  vec2 closestPivot = vec2(1e30);
+  float closestDistance = 1e30;
+
+  for (int y = -1; y <= 1; y++) {
+    for (int x = -1; x <= 1; x++) {
+      vec2 offset = vec2(float(x), float(y));
+      vec2 cell = centerCell + offset;
+      vec2 jitter = hash22(cell);
+      vec2 pivot = (cell + jitter) * cellSize;
+
+      float distance = length(p - pivot);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestPivot = pivot;
+      }
+    }  
+  }
+
+  return WorleyData(closestPivot, closestDistance);
+}
 
 TerrainData getTerrainData(vec2 uv) {
   vec2 texelSize = vec2(1.0 / 128.0);
@@ -37,7 +74,8 @@ TerrainData octave(TerrainData terrain, vec2 p, float frequency, float amplitude
   vec2 perp = vec2(-terrain.gradient.y, terrain.gradient.x) / len;
   
   // 3. Project position to get distance across the stripe
-  float d = dot(p, perp);
+  WorleyData worley = worleyNoise(p, uCellSize);
+  float d = dot(p - worley.cellPivot, perp);
   
   // 4. Height offset (Cosine wave)
   float heightOffset = amplitude * cos(d * frequency);
@@ -86,6 +124,9 @@ void main() {
   terrain.gradient *= (uMaxHeight / worldScale);
 
   terrain = erode(terrain, position.xy);
+
+  WorleyData worley = worleyNoise(position.xy, uCellSize);
+  vCellID = hash22(worley.cellPivot);
 
   vec3 displacedPosition = position;
   displacedPosition.z += terrain.height;

@@ -10,9 +10,13 @@ export const useTerrainStore = create((set, get) => ({
   shaderVersion: 0,
   debugMode: 0,
 
+  cellSize: 1.0,
+
   setMaxHeight: (maxHeight) => set({ maxHeight }),
   setResolution: (resolution) => set({ resolution }),
   setDebugMode: (debugMode) => set({ debugMode }),
+
+  setCellSize: (cellSize) => set({ cellSize }),
 
   reloadShader: () => {
     const { shaderVersion: oldVersion } = get();

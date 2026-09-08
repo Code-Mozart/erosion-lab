@@ -4,6 +4,7 @@ varying vec2 vUv;
 varying float vElevation;
 varying vec2 vGradient;
 varying vec3 vNormal;
+varying vec2 vCellID;
 
 // Enum Mode Constants
 #define MODE_SHADED 0
@@ -11,6 +12,7 @@ varying vec3 vNormal;
 #define MODE_GRADIENTS 2
 #define MODE_STEEPNESS 3
 #define MODE_NORMALS 4
+#define MODE_WORLEY 5
 
 uniform int uDebugMode;
 
@@ -50,6 +52,11 @@ void main() {
 
         case MODE_NORMALS: {
             finalColor = N * 0.5 + 0.5;
+            break;
+        }
+
+        case MODE_WORLEY: {
+            finalColor = vec3(vCellID, 0.0);
             break;
         }
 

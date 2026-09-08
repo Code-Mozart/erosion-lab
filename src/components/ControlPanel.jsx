@@ -13,6 +13,9 @@ export default function ControlPanel() {
   const debugMode = useTerrainStore((s) => s.debugMode);
   const setDebugMode = useTerrainStore((s) => s.setDebugMode);
 
+  const cellSize = useTerrainStore((s) => s.cellSize);
+  const setCellSize = useTerrainStore((s) => s.setCellSize);
+
   const handlePanelClick = (e) => {
     // Ignore clicks if they happened on or inside an input, select, button, or label
     if (e.target.closest("input, select, button, label")) {
@@ -69,6 +72,18 @@ export default function ControlPanel() {
       </label>
 
       <label>
+        CellSize: {cellSize}
+        <input
+          type="range"
+          min="0.01"
+          max="5.0"
+          step="0.01"
+          value={cellSize}
+          onChange={(e) => setCellSize(parseFloat(e.target.value))}
+        />
+      </label>
+
+      <label>
         Display Mode:
         <select
           value={debugMode}
@@ -79,6 +94,7 @@ export default function ControlPanel() {
           <option value={2}>Gradients</option>
           <option value={3}>Steepness</option>
           <option value={4}>Normals</option>
+          <option value={5}>Debug Cell Noise</option>
         </select>
       </label>
 
