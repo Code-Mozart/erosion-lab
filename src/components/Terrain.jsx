@@ -14,14 +14,8 @@ export default function Terrain() {
   const heightmap = useTerrainStore((s) => s.texture);
   const maxHeight = useTerrainStore((s) => s.maxHeight);
   const resolution = useTerrainStore((s) => s.resolution);
-  const setMaterialRef = useTerrainStore((s) => s.setMaterialRef);
-
-  // Register the material ref in Zustand so reloadShader can access it
-  useEffect(() => {
-    if (materialRef.current) {
-      setMaterialRef(materialRef.current);
-    }
-  }, [setMaterialRef]);
+  const shaderVersion = useTerrainStore((s) => s.shaderVersion);
+  const debugMode = useTerrainStore((s) => s.debugMode);
 
   // Update uniforms when store properties change
   useEffect(() => {
@@ -30,6 +24,12 @@ export default function Terrain() {
       materialRef.current.uMaxHeight = maxHeight;
     }
   }, [heightmap, maxHeight]);
+
+  useEffect(() => {
+    if (materialRef.current) {
+      materialRef.current.uDebugMode = debugMode;
+    }
+  }, [debugMode]);
 
   useFrame((state, delta) => {
     if (materialRef.current) {
@@ -60,6 +60,7 @@ export default function Terrain() {
     >
       <planeGeometry args={[20, 20, resolution, resolution]} />
       <customPlaneMaterial
+        key={shaderVersion}
         ref={materialRef}
         uTexture={heightmap || null}
         uMaxHeight={maxHeight}

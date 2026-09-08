@@ -9,6 +9,7 @@ export const CustomPlaneMaterial = shaderMaterial(
     uTime: 0,
     uTexture: new Texture(),
     uMaxHeight: 2.5,
+    uDebugMode: 0,
   },
 
   customPlaneVert,

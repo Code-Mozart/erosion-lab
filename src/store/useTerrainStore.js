@@ -5,18 +5,17 @@ export const useTerrainStore = create((set, get) => ({
   maxHeight: 2.5,
   resolution: 32,
   texture: null,
-  materialRef: null,
+  shaderVersion: 0,
+  debugMode: 0,
 
-  setMaterialRef: (ref) => set({ materialRef: ref }),
   setMaxHeight: (maxHeight) => set({ maxHeight }),
   setResolution: (resolution) => set({ resolution }),
+  setDebugMode: (debugMode) => set({ debugMode }),
 
   reloadShader: () => {
-    const { materialRef } = get();
-    if (materialRef) {
-      // Tells Three.js to recompile GLSL code directly without state version counters
-      materialRef.needsUpdate = true;
-    }
+    const { shaderVersion: oldVersion } = get();
+    set({ shaderVersion: oldVersion + 1 });
+    console.log("Update shader!");
   },
 
   uploadTexture: (file) => {
