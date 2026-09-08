@@ -4,8 +4,11 @@ import Headlamp from "./components/Headlamp";
 import ControlledCamera from "./components/ControlledCamera";
 import Terrain from "./components/Terrain";
 import ControlPanel from "./components/ControlPanel";
+import { loadShaderLib } from "./materials/shaderLib";
 
 export default function App() {
+  loadShaderLib();
+
   return (
     <div>
       <ControlPanel />

@@ -1,10 +1,11 @@
 uniform float uMaxHeight;
+uniform float uCellSize;
 
 varying vec2 vUv;
 varying float vElevation;
 varying vec2 vGradient;
 varying vec3 vNormal;
-varying vec2 vCellID;
+varying vec2 vPosition;
 
 // Enum Mode Constants
 #define MODE_SHADED 0
@@ -19,6 +20,37 @@ uniform int uDebugMode;
 // Automatically injected by Three.js when material.lights = true
 #include <common>
 #include <lights_pars_begin>
+
+#include <hash22>
+#include <worleyUtils>
+
+struct WorleyData {
+  vec2 cellPivot;
+  float distance;
+};
+
+WorleyData worleyNoise(vec2 p, float cellSize) {
+  vec2 centerCell = floor(p / cellSize);
+
+  vec2 closestPivot = vec2(1e30);
+  float closestDistance = 1e30;
+
+  for (int y = -1; y <= 1; y++) {
+    for (int x = -1; x <= 1; x++) {
+      vec2 offset = vec2(float(x), float(y));
+      vec2 cell = centerCell + offset;
+      vec2 pivot = getWorleyCellPivot(cell, cellSize);
+
+      float distance = length(p - pivot);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestPivot = pivot;
+      }
+    }  
+  }
+
+  return WorleyData(closestPivot, closestDistance);
+}
 
 void main() {
     // Re-normalize interpolated WORLD SPACE normal vector
@@ -56,7 +88,9 @@ void main() {
         }
 
         case MODE_WORLEY: {
-            finalColor = vec3(vCellID, 0.0);
+            WorleyData worley = worleyNoise(vPosition, uCellSize);
+            vec2 cellID = hash22(worley.cellPivot);
+            finalColor = vec3(cellID, 0.0);
             break;
         }
 

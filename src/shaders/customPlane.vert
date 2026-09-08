@@ -8,47 +8,27 @@ varying vec2 vUv;
 varying float vElevation;
 varying vec3 vNormal;
 varying vec2 vGradient;
-varying vec2 vCellID;
+varying vec2 vPosition;
+
+#include <hash22>
+#include <worleyUtils>
 
 struct TerrainData {
   float height;
   vec2 gradient;
 };
 
-struct WorleyData {
-  vec2 cellPivot;
-  float distance;
+struct OctaveData {
+  float frequency;
+  float cellSize;
+  float amplitude;
 };
 
-vec2 hash22(vec2 p) {
-  vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
-  p3 += dot(p3, p3.yzx + 33.33);
-  return fract((p3.xx + p3.yz) * p3.zy);
-}
-
-WorleyData worleyNoise(vec2 p, float cellSize) {
-  vec2 centerCell = floor(p / cellSize);
-
-  vec2 closestPivot = vec2(1e30);
-  float closestDistance = 1e30;
-
-  for (int y = -1; y <= 1; y++) {
-    for (int x = -1; x <= 1; x++) {
-      vec2 offset = vec2(float(x), float(y));
-      vec2 cell = centerCell + offset;
-      vec2 jitter = hash22(cell + vec2(1.2355e5, -1.143e2));
-      vec2 pivot = (cell + jitter) * cellSize;
-
-      float distance = length(p - pivot);
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestPivot = pivot;
-      }
-    }  
-  }
-
-  return WorleyData(closestPivot, closestDistance);
-}
+struct WorleyData {
+  float accumulatedHeight;
+  vec2 accumulatedGradient;
+  float totalWeight;
+};
 
 TerrainData getTerrainData(vec2 uv) {
   vec2 texelSize = vec2(1.0 / 128.0);
@@ -64,50 +44,82 @@ TerrainData getTerrainData(vec2 uv) {
   return TerrainData(height, gradient);
 }
 
-TerrainData octave(TerrainData terrain, vec2 p, float frequency, float cellSize, float amplitude) {
-  // 1. Get length of current gradient (steepness)
-  float len = length(terrain.gradient);
+float smoothWeight(float dist, float maxDist) {
+    float t = clamp(1.0 - (dist / maxDist), 0.0, 1.0);
+    return t * t * (3.0 - 2.0 * t); // Smoothstep curve
+}
+
+WorleyData accumulate(vec2 p, vec2 perp, OctaveData o) {
+  vec2 centerCell = floor(p / o.cellSize);
+  float blendRadius = o.cellSize * 1.5;
+
+  WorleyData acc = WorleyData(0.0, vec2(0.0), 0.0);
+
+  for (int y = -1; y <= 1; y++) {
+    for (int x = -1; x <= 1; x++) {
+      vec2 offset = vec2(float(x), float(y));
+      vec2 cell = centerCell + offset;
+      vec2 pivot = getWorleyCellPivot(cell, o.cellSize);
+
+      vec2 fromPivot = p - pivot;
+      float perpDistance = dot(fromPivot, perp);
+      float distanceToPivot = length(fromPivot);
+      float weight = smoothWeight(distanceToPivot, blendRadius);
+
+      float angle = perpDistance * o.frequency;
+      float height = o.amplitude * cos(angle);
+      vec2 gradient = (-o.amplitude * o.frequency * sin(angle)) * perp;
+
+      acc.accumulatedHeight += height * weight;
+      acc.accumulatedGradient += gradient * weight;
+      acc.totalWeight += weight;
+    }
+  }
+
+  return acc;
+}
+
+TerrainData octave(TerrainData terrain, vec2 p, OctaveData o) {
+  float steepness = length(terrain.gradient);
   
   // Avoid division by zero if terrain is completely flat
-  if (len < 0.0001) return terrain;
+  if (steepness < 0.0001) return terrain;
 
-  // 2. Compute normalized perpendicular vector
-  vec2 perp = vec2(-terrain.gradient.y, terrain.gradient.x) / len;
+  vec2 perp = vec2(-terrain.gradient.y, terrain.gradient.x) / steepness;
+
+  WorleyData acc = accumulate(p, perp, o);
+  if (acc.totalWeight < 0.0001) {
+    return terrain;
+  }
+
+  float deltaHeight = acc.accumulatedHeight / acc.totalWeight;
+  vec2 deltaGradient = acc.accumulatedGradient / acc.totalWeight;
   
-  // 3. Project position to get distance across the stripe
-  WorleyData worley = worleyNoise(p, cellSize);
-  float d = dot(p - worley.cellPivot, perp);
-  
-  // 4. Height offset (Cosine wave)
-  float heightOffset = amplitude * cos(d * frequency);
-  
-  // 5. Slope/Gradient offset (Negative Sine wave scaled by frequency & direction)
-  vec2 gradientOffset = -amplitude * frequency * sin(d * frequency) * perp;
-  
-  // 6. Combine both
   return TerrainData(
-      terrain.height + heightOffset,
-      terrain.gradient + gradientOffset
+      terrain.height + deltaHeight,
+      terrain.gradient + deltaGradient
   );
 }
 
 TerrainData erode(TerrainData terrain, vec2 p) {
-  int octaves = 1;
+  int octaves = 3;
 
-  float frequency = uFrequency;
-  float cellSize = uCellSize;
-  float amplitude = 0.2;
+  OctaveData o = OctaveData(
+    uFrequency,
+    uCellSize,
+    0.1
+  );
 
   float lacunarity = 2.0;
   float persistence = 0.5;
 
   int i = 0;
   while (i < octaves) {
-    terrain = octave(terrain, p, frequency, cellSize, amplitude);
+    terrain = octave(terrain, p, o);
 
-    frequency *= lacunarity;
-    cellSize /= lacunarity;
-    amplitude *= persistence;
+    o.frequency *= lacunarity;
+    o.cellSize /= lacunarity;
+    o.amplitude *= persistence;
     i += 1;
   }
 
@@ -128,8 +140,7 @@ void main() {
 
   terrain = erode(terrain, position.xy);
 
-  WorleyData worley = worleyNoise(position.xy, uCellSize);
-  vCellID = hash22(worley.cellPivot);
+  vPosition = position.xy;
 
   vec3 displacedPosition = position;
   displacedPosition.z += terrain.height;
