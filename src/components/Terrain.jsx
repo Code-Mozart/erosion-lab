@@ -7,8 +7,6 @@ import { remap } from "../utils/mathUtils";
 
 extend({ CustomPlaneMaterial });
 
-const DEFAULT_PLANE_SIZE = 10.0;
-
 export default function Terrain() {
   const [isWireframe, setIsWireframe] = useState(false);
   const materialRef = useRef();
@@ -20,29 +18,10 @@ export default function Terrain() {
   const resolution = useTerrainStore((s) => s.resolution);
   const shaderVersion = useTerrainStore((s) => s.shaderVersion);
   const debugMode = useTerrainStore((s) => s.debugMode);
+  const octaves = useTerrainStore((s) => s.octaves);
   const frequency = useTerrainStore((s) => s.frequency);
-
-  const [planeWidth, planeHeight] = useMemo(() => {
-    if (!heightmap || !heightmap.image) {
-      return [DEFAULT_PLANE_SIZE, DEFAULT_PLANE_SIZE];
-    }
-
-    const { width, height } = heightmap.image;
-
-    if (width > height) {
-      const aspectRatio = height / width;
-      return [
-        Math.round(DEFAULT_PLANE_SIZE),
-        Math.round(DEFAULT_PLANE_SIZE) * aspectRatio,
-      ];
-    } else {
-      const aspectRatio = width / height;
-      return [
-        Math.round(DEFAULT_PLANE_SIZE) * aspectRatio,
-        Math.round(DEFAULT_PLANE_SIZE),
-      ];
-    }
-  }, [heightmap]);
+  const blendRadius = useTerrainStore((s) => s.blendRadius);
+  const [planeWidth, planeHeight] = useTerrainStore((s) => s.planeSize);
 
   const scaledMaxHeight = useMemo(() => {
     return remap(
@@ -88,8 +67,11 @@ export default function Terrain() {
         uTexture={heightmap || null}
         uMaxHeight={scaledMaxHeight}
         uDebugMode={debugMode}
+        uOctaves={octaves}
         uFrequency={frequency}
+        uAmplitude={1.0 / frequency}
         uCellSize={(1.5 / frequency) * 4.0}
+        uBlendRadius={blendRadius}
         wireframe={isWireframe}
       />
     </mesh>

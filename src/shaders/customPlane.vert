@@ -2,7 +2,10 @@ uniform sampler2D uTexture;
 uniform float uMaxHeight;
 uniform float uTime;
 uniform float uCellSize;
+uniform int uOctaves;
 uniform float uFrequency;
+uniform float uAmplitude;
+uniform float uBlendRadius;
 
 varying vec2 vUv;
 varying float vElevation;
@@ -51,7 +54,7 @@ float smoothWeight(float dist, float maxDist) {
 
 WorleyData accumulate(vec2 p, vec2 perp, OctaveData o) {
   vec2 centerCell = floor(p / o.cellSize);
-  float blendRadius = o.cellSize * 1.5;
+  float blendRadius = o.cellSize * uBlendRadius;
 
   WorleyData acc = WorleyData(0.0, vec2(0.0), 0.0);
 
@@ -102,19 +105,17 @@ TerrainData octave(TerrainData terrain, vec2 p, OctaveData o) {
 }
 
 TerrainData erode(TerrainData terrain, vec2 p) {
-  int octaves = 3;
-
   OctaveData o = OctaveData(
     uFrequency,
     uCellSize,
-    0.1
+    uAmplitude
   );
 
   float lacunarity = 2.0;
   float persistence = 0.5;
 
   int i = 0;
-  while (i < octaves) {
+  while (i < uOctaves) {
     terrain = octave(terrain, p, o);
 
     o.frequency *= lacunarity;
@@ -154,5 +155,5 @@ void main() {
   gl_Position = projectionMatrix * viewPosition;
 
   vElevation = terrain.height / uMaxHeight;
-  vGradient = terrain.gradient;
+  vGradient = terrain.gradient / worldScale;
 }

@@ -10,8 +10,11 @@ export const CustomPlaneMaterial = shaderMaterial(
     uTexture: new Texture(),
     uMaxHeight: 2.5,
     uDebugMode: 0,
+    uOctaves: 3,
     uFrequency: 4.0,
+    uAmplitude: 0.1,
     uCellSize: 1.5,
+    uBlendRadius: 1.5,
   },
 
   customPlaneVert,
