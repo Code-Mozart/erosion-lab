@@ -1,22 +1,18 @@
 import { useState } from "react";
 import { MAX_HEIGHT_BOUNDS, useTerrainStore } from "../store/useTerrainStore";
+import { PARAMETERS } from "../config/parameters";
+import {
+  getDisplayName,
+  getRange,
+  getSetterName,
+  getStepWidth,
+} from "../utils/parameterUtils";
 
 export default function ControlPanel() {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const maxHeight = useTerrainStore((s) => s.maxHeight);
-  const setMaxHeight = useTerrainStore((s) => s.setMaxHeight);
   const uploadTexture = useTerrainStore((s) => s.uploadTexture);
   const reloadShader = useTerrainStore((s) => s.reloadShader);
-  const debugMode = useTerrainStore((s) => s.debugMode);
-  const setDebugMode = useTerrainStore((s) => s.setDebugMode);
-
-  const octaves = useTerrainStore((s) => s.octaves);
-  const setOctaves = useTerrainStore((s) => s.setOctaves);
-  const frequency = useTerrainStore((s) => s.frequency);
-  const setFrequency = useTerrainStore((s) => s.setFrequency);
-  const blendRadius = useTerrainStore((s) => s.blendRadius);
-  const setBlendRadius = useTerrainStore((s) => s.setBlendRadius);
 
   const handlePanelClick = (e) => {
     setIsCollapsed((prev) => !prev);
@@ -40,71 +36,9 @@ export default function ControlPanel() {
               />
             </label>
 
-            <label>
-              Height Scale: {maxHeight.toFixed(2)}
-              <input
-                type="range"
-                min={MAX_HEIGHT_BOUNDS[0]}
-                max={MAX_HEIGHT_BOUNDS[1]}
-                step={getStepwidth(MAX_HEIGHT_BOUNDS, 100)}
-                value={maxHeight}
-                onChange={(e) => setMaxHeight(parseFloat(e.target.value))}
-              />
-            </label>
-
-            <ResolutionControl />
-
-            <label>
-              Frequency: {frequency}
-              <input
-                type="range"
-                min="0.1"
-                max="50.0"
-                step="0.1"
-                value={frequency}
-                onChange={(e) => setFrequency(parseFloat(e.target.value))}
-              />
-            </label>
-
-            <label>
-              Octaves: {octaves}
-              <input
-                type="range"
-                min="0"
-                max="10"
-                step="1"
-                value={octaves}
-                onChange={(e) => setOctaves(parseInt(e.target.value))}
-              />
-            </label>
-
-            <label>
-              Blend Radius: {blendRadius}
-              <input
-                type="range"
-                min="0"
-                max="10"
-                step="0.1"
-                value={blendRadius}
-                onChange={(e) => setBlendRadius(parseFloat(e.target.value))}
-              />
-            </label>
-
-            <label>
-              Display Mode:
-              <select
-                value={debugMode}
-                onChange={(e) => setDebugMode(parseInt(e.target.value))}
-              >
-                <option value={0}>Colored Terrain</option>
-                <option value={1}>Shaded Terrain</option>
-                <option value={2}>Elevation Map</option>
-                <option value={3}>Gradients</option>
-                <option value={4}>Steepness</option>
-                <option value={5}>Normals</option>
-                <option value={6}>Debug Cell Noise</option>
-              </select>
-            </label>
+            {PARAMETERS.map((p) => (
+              <ParameterControl key={p.identifier} parameter={p} />
+            ))}
 
             <button onClick={reloadShader}>Reload Shader</button>
           </div>
@@ -114,28 +48,100 @@ export default function ControlPanel() {
   );
 }
 
-function ResolutionControl({}) {
-  const resolution = useTerrainStore((s) => s.resolution);
-  const setResolution = useTerrainStore((s) => s.setResolution);
+function ParameterControl({ parameter: p }) {
+  const value = useTerrainStore((s) => s[p.identifier]);
+  const setter = useTerrainStore((s) => s[getSetterName(p)]);
 
-  const fromExp = (exp) => Math.round(Math.pow(2, exp));
-  const toExp = (res) => Math.log2(res);
+  const name = getDisplayName(p);
+  const parser = {
+    int: parseInt,
+    float: parseFloat,
+    percent: parseFloat,
+  }[p.type];
+  const step = getStepWidth(p);
+  const range = getRange(p);
 
+  const createSlider = () => {
+    return (
+      <Slider
+        displayValue={value}
+        value={value}
+        setter={setter}
+        name={name}
+        range={range}
+        step={step}
+        parser={parser}
+      />
+    );
+  };
+
+  const createLogarithmic = () => {
+    const fromExp = (exp) => Math.round(Math.pow(2, exp));
+    const toExp = (res) => Math.log2(res);
+
+    const expRange = range.map(toExp);
+
+    return (
+      <Slider
+        displayValue={value}
+        value={toExp(value)}
+        setter={setter}
+        name={name}
+        range={expRange}
+        step={0.1}
+        parser={(x) => parser(fromExp(x))}
+      />
+    );
+  };
+
+  const createSelect = () => {
+    return (
+      <Select
+        displayValue={value}
+        value={value}
+        setter={setter}
+        name={name}
+        options={p.map}
+      />
+    );
+  };
+
+  if (p.type === "enum") {
+    return createSelect();
+  } else if (p.isLogarithmic) {
+    return createLogarithmic();
+  } else {
+    return createSlider();
+  }
+}
+
+function Slider({ displayValue, value, setter, name, range, step, parser }) {
   return (
     <label>
-      Resolution: {resolution}
+      {name}: {displayValue}
       <input
         type="range"
-        min="1"
-        max="10"
-        step="0.01"
-        value={toExp(resolution)}
-        onChange={(e) => setResolution(fromExp(parseFloat(e.target.value)))}
+        min={range[0]}
+        max={range[1]}
+        step={step}
+        value={value}
+        onChange={(e) => setter(parser(e.target.value))}
       />
     </label>
   );
 }
 
-function getStepwidth(bounds, steps) {
-  return (bounds[1] - bounds[0]) / steps;
+function Select({ value, setter, name, options }) {
+  return (
+    <label>
+      {name}:
+      <select value={value} onChange={(e) => setter(parseInt(e.target.value))}>
+        {options.map((opt, index) => (
+          <option key={index} value={index}>
+            {opt}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 }

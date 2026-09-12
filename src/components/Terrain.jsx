@@ -4,6 +4,7 @@ import { CustomPlaneMaterial } from "../materials/customPlaneMaterial";
 import { MAX_HEIGHT_BOUNDS, useTerrainStore } from "../store/useTerrainStore";
 import { useMemo } from "react";
 import { remap } from "../utils/mathUtils";
+import { PARAMETERS } from "../config/parameters";
 
 extend({ CustomPlaneMaterial });
 
@@ -17,7 +18,7 @@ export default function Terrain() {
   const maxHeight = useTerrainStore((s) => s.maxHeight);
   const resolution = useTerrainStore((s) => s.resolution);
   const shaderVersion = useTerrainStore((s) => s.shaderVersion);
-  const debugMode = useTerrainStore((s) => s.debugMode);
+  const displayMode = useTerrainStore((s) => s.displayMode);
   const octaves = useTerrainStore((s) => s.octaves);
   const frequency = useTerrainStore((s) => s.frequency);
   const blendRadius = useTerrainStore((s) => s.blendRadius);
@@ -66,11 +67,11 @@ export default function Terrain() {
         ref={materialRef}
         uTexture={heightmap || null}
         uMaxHeight={scaledMaxHeight}
-        uDebugMode={debugMode}
+        uDebugMode={displayMode}
         uOctaves={octaves}
         uFrequency={frequency}
         uAmplitude={1.0 / frequency}
-        uCellSize={(1.5 / frequency) * 4.0}
+        uCellSize={7.5 / frequency}
         uBlendRadius={blendRadius}
         wireframe={isWireframe}
       />
