@@ -8,6 +8,7 @@ uniform float uAmplitude;
 uniform float uBlendRadius;
 uniform float uValleyAltitude;
 uniform float uPeakAltitude;
+uniform float uDetail;
 
 varying vec2 vUv;
 varying float vElevation;
@@ -32,6 +33,16 @@ struct OctaveData {
   float frequency;
   float cellSize;
   float amplitude;
+};
+
+struct MaskData {
+  float value;
+  float target;
+};
+
+struct OctaveResult {
+  TerrainData terrain;
+  MaskData mask;
 };
 
 struct WorleyData {
@@ -59,7 +70,7 @@ float smoothWeight(float dist, float maxDist) {
     return t * t * (3.0 - 2.0 * t); // Smoothstep curve
 }
 
-WorleyData accumulate(vec2 p, vec2 perp, float easedSteepness, float fadeTarget, OctaveData o) {
+WorleyData accumulate(vec2 p, vec2 perp, float maskValue, float maskTarget, OctaveData o) {
   vec2 centerCell = floor(p / o.cellSize);
   float blendRadius = o.cellSize * uBlendRadius;
 
@@ -79,9 +90,9 @@ WorleyData accumulate(vec2 p, vec2 perp, float easedSteepness, float fadeTarget,
       float angle = perpDistance * o.frequency;
 
       float wave = o.amplitude * cos(angle);
-      float height = mix(fadeTarget * o.amplitude, wave, easedSteepness);
+      float height = mix(maskTarget * o.amplitude, wave, maskValue);
 
-      vec2 gradient = (-o.amplitude * o.frequency * sin(angle)) * perp * easedSteepness;
+      vec2 gradient = (-o.amplitude * o.frequency * sin(angle)) * perp * maskValue;
 
       acc.accumulatedHeight += height * weight;
       acc.accumulatedGradient += gradient * weight;
@@ -92,27 +103,40 @@ WorleyData accumulate(vec2 p, vec2 perp, float easedSteepness, float fadeTarget,
   return acc;
 }
 
-TerrainData octave(TerrainData terrain, vec2 p, OctaveData o) {
+
+OctaveResult octave(OctaveResult previous, vec2 p, OctaveData o) {
+  TerrainData terrain = previous.terrain;
+  MaskData mask = previous.mask;
+
   float steepness = length(terrain.gradient);
 
   vec2 perp = (steepness < 0.0001)
     ? vec2(1.0, 0.0)
     : vec2(-terrain.gradient.y, terrain.gradient.x) / steepness;
-  float easedSteepness = easeOut(steepness);
-  float fadeTarget = inverseLerp(uValleyAltitude, uPeakAltitude, terrain.height) * 2.0 - 1.0;
 
-  WorleyData acc = accumulate(p, perp, easedSteepness, fadeTarget, o);
-  if (acc.totalWeight < 0.0001) {
-    return terrain;
-  }
+  float easedSteepness = easeOut(steepness, 2.0);
+  float nextMaskValue = easeOut(mask.value, uDetail) * easedSteepness;
+
+  WorleyData acc = accumulate(p, perp, nextMaskValue, mask.target, o);
 
   float deltaHeight = acc.accumulatedHeight / acc.totalWeight;
   vec2 deltaGradient = acc.accumulatedGradient / acc.totalWeight;
-  
-  return TerrainData(
-      terrain.height + deltaHeight,
-      terrain.gradient + deltaGradient
-  );
+
+  if (acc.totalWeight > 0.0001) {
+    terrain.height += deltaHeight;
+    terrain.gradient += deltaGradient;
+  }
+
+  float nextMaskTarget = inverseLerp(uValleyAltitude, uPeakAltitude, terrain.height) * 2.0 - 1.0;
+  MaskData nextMask = MaskData(nextMaskValue, nextMaskTarget);
+  return OctaveResult(terrain, nextMask);
+}
+
+MaskData getInitialMask(TerrainData terrain) {
+  float value = easeOut(length(terrain.gradient), 2.0);
+  float target = inverseLerp(uValleyAltitude, uPeakAltitude, terrain.height) * 2.0 - 1.0;
+
+  return MaskData(value, target);
 }
 
 TerrainData erode(TerrainData terrain, vec2 p) {
@@ -122,9 +146,12 @@ TerrainData erode(TerrainData terrain, vec2 p) {
     uAmplitude
   );
 
+  MaskData mask = getInitialMask(terrain);
+  OctaveResult state = OctaveResult(terrain, mask);
+
   int i = 0;
   while (i < uOctaves) {
-    terrain = octave(terrain, p, o);
+    state = octave(state, p, o);
 
     o.frequency *= LACUNARITY;
     o.cellSize /= LACUNARITY;
@@ -132,7 +159,7 @@ TerrainData erode(TerrainData terrain, vec2 p) {
     i += 1;
   }
 
-  return terrain;
+  return state.terrain;
 }
 
 float calculateMaxErosionAdd() {

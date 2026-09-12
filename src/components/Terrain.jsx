@@ -24,6 +24,7 @@ export default function Terrain() {
   const blendRadius = useTerrainStore((s) => s.blendRadius);
   const valleyAltitude = useTerrainStore((s) => s.valleyAltitude);
   const peakAltitude = useTerrainStore((s) => s.peakAltitude);
+  const detail = useTerrainStore((s) => s.detail);
   const [planeWidth, planeHeight] = useTerrainStore((s) => s.planeSize);
 
   const scaledMaxHeight = useMemo(() => {
@@ -77,6 +78,7 @@ export default function Terrain() {
         uBlendRadius={blendRadius}
         uValleyAltitude={valleyAltitude * scaledMaxHeight}
         uPeakAltitude={peakAltitude * scaledMaxHeight}
+        uDetail={detail}
         wireframe={isWireframe}
       />
     </mesh>

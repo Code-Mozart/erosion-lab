@@ -43,6 +43,12 @@ export const PARAMETERS = [
     initialValue: 1.0,
   },
   {
+    identifier: "detail",
+    type: "float",
+    range: [0.0, 10.0],
+    initialValue: 1.0,
+  },
+  {
     identifier: "displayMode",
     type: "enum",
     map: [
