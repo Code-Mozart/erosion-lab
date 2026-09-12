@@ -6,6 +6,8 @@ uniform int uOctaves;
 uniform float uFrequency;
 uniform float uAmplitude;
 uniform float uBlendRadius;
+uniform float uValleyAltitude;
+uniform float uPeakAltitude;
 
 varying vec2 vUv;
 varying float vElevation;
@@ -13,8 +15,13 @@ varying vec3 vNormal;
 varying vec2 vGradient;
 varying vec2 vPosition;
 
+#include <inverseLerp>
+#include <easeOut>
 #include <hash22>
 #include <worleyUtils>
+
+#define LACUNARITY 2.0
+#define PERSISTENCE 0.5
 
 struct TerrainData {
   float height;
@@ -52,7 +59,7 @@ float smoothWeight(float dist, float maxDist) {
     return t * t * (3.0 - 2.0 * t); // Smoothstep curve
 }
 
-WorleyData accumulate(vec2 p, vec2 perp, OctaveData o) {
+WorleyData accumulate(vec2 p, vec2 perp, float easedSteepness, float fadeTarget, OctaveData o) {
   vec2 centerCell = floor(p / o.cellSize);
   float blendRadius = o.cellSize * uBlendRadius;
 
@@ -70,8 +77,11 @@ WorleyData accumulate(vec2 p, vec2 perp, OctaveData o) {
       float weight = smoothWeight(distanceToPivot, blendRadius);
 
       float angle = perpDistance * o.frequency;
-      float height = o.amplitude * cos(angle);
-      vec2 gradient = (-o.amplitude * o.frequency * sin(angle)) * perp;
+
+      float wave = o.amplitude * cos(angle);
+      float height = mix(fadeTarget * o.amplitude, wave, easedSteepness);
+
+      vec2 gradient = (-o.amplitude * o.frequency * sin(angle)) * perp * easedSteepness;
 
       acc.accumulatedHeight += height * weight;
       acc.accumulatedGradient += gradient * weight;
@@ -84,13 +94,14 @@ WorleyData accumulate(vec2 p, vec2 perp, OctaveData o) {
 
 TerrainData octave(TerrainData terrain, vec2 p, OctaveData o) {
   float steepness = length(terrain.gradient);
-  
-  // Avoid division by zero if terrain is completely flat
-  if (steepness < 0.0001) return terrain;
 
-  vec2 perp = vec2(-terrain.gradient.y, terrain.gradient.x) / steepness;
+  vec2 perp = (steepness < 0.0001)
+    ? vec2(1.0, 0.0)
+    : vec2(-terrain.gradient.y, terrain.gradient.x) / steepness;
+  float easedSteepness = easeOut(steepness);
+  float fadeTarget = inverseLerp(uValleyAltitude, uPeakAltitude, terrain.height) * 2.0 - 1.0;
 
-  WorleyData acc = accumulate(p, perp, o);
+  WorleyData acc = accumulate(p, perp, easedSteepness, fadeTarget, o);
   if (acc.totalWeight < 0.0001) {
     return terrain;
   }
@@ -111,20 +122,29 @@ TerrainData erode(TerrainData terrain, vec2 p) {
     uAmplitude
   );
 
-  float lacunarity = 2.0;
-  float persistence = 0.5;
-
   int i = 0;
   while (i < uOctaves) {
     terrain = octave(terrain, p, o);
 
-    o.frequency *= lacunarity;
-    o.cellSize /= lacunarity;
-    o.amplitude *= persistence;
+    o.frequency *= LACUNARITY;
+    o.cellSize /= LACUNARITY;
+    o.amplitude *= PERSISTENCE;
     i += 1;
   }
 
   return terrain;
+}
+
+float calculateMaxErosionAdd() {
+  float maxAdd = 0.0;
+  float amplitude = uAmplitude;
+
+  for (int i = 0; i < uOctaves; i++) {
+    maxAdd += amplitude;
+    amplitude *= PERSISTENCE;
+  }
+
+  return maxAdd;
 }
 
 void main() {
@@ -135,9 +155,11 @@ void main() {
   vec2 uvOffset = uv - vec2(0.5);
   float distUv = max(length(uvOffset), 0.0001); 
   float worldScale = max(length(position.xy) / distUv, 0.0001);
+  
+  float heightScale = uMaxHeight - calculateMaxErosionAdd();
 
-  terrain.height *= uMaxHeight;
-  terrain.gradient *= (uMaxHeight / worldScale);
+  terrain.height *= heightScale;
+  terrain.gradient *= (heightScale / worldScale);
 
   terrain = erode(terrain, position.xy);
 

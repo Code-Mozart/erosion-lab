@@ -22,6 +22,8 @@ export default function Terrain() {
   const octaves = useTerrainStore((s) => s.octaves);
   const frequency = useTerrainStore((s) => s.frequency);
   const blendRadius = useTerrainStore((s) => s.blendRadius);
+  const valleyAltitude = useTerrainStore((s) => s.valleyAltitude);
+  const peakAltitude = useTerrainStore((s) => s.peakAltitude);
   const [planeWidth, planeHeight] = useTerrainStore((s) => s.planeSize);
 
   const scaledMaxHeight = useMemo(() => {
@@ -73,6 +75,8 @@ export default function Terrain() {
         uAmplitude={1.0 / frequency}
         uCellSize={7.5 / frequency}
         uBlendRadius={blendRadius}
+        uValleyAltitude={valleyAltitude * scaledMaxHeight}
+        uPeakAltitude={peakAltitude * scaledMaxHeight}
         wireframe={isWireframe}
       />
     </mesh>

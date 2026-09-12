@@ -33,6 +33,16 @@ export const PARAMETERS = [
     initialValue: 1.5,
   },
   {
+    identifier: "valleyAltitude",
+    type: "percent",
+    initialValue: 0.0,
+  },
+  {
+    identifier: "peakAltitude",
+    type: "percent",
+    initialValue: 1.0,
+  },
+  {
     identifier: "displayMode",
     type: "enum",
     map: [
