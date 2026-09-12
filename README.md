@@ -18,6 +18,6 @@ If you are developing a production application, we recommend using TypeScript wi
 ## Install and Run
 
 ```
-pnpm install -D
+pnpm install
 pnpm dev
 ```
