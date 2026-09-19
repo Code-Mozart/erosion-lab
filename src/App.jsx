@@ -10,7 +10,7 @@ export default function App() {
   loadShaderLib();
 
   return (
-    <div>
+    <>
       <ControlPanel />
       <div className="viewport">
         <Canvas>
@@ -20,6 +20,6 @@ export default function App() {
           <ControlledCamera />
         </Canvas>
       </div>
-    </div>
+    </>
   );
 }

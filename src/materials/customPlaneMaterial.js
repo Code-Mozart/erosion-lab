@@ -18,6 +18,7 @@ export const CustomPlaneMaterial = shaderMaterial(
     uValleyAltitude: 0.0,
     uPeakAltitude: 2.5,
     uDetail: 1.0,
+    uWaterLevel: 0.0,
   },
 
   customPlaneVert,

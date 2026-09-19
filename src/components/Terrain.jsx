@@ -20,11 +20,14 @@ export default function Terrain() {
   const shaderVersion = useTerrainStore((s) => s.shaderVersion);
   const displayMode = useTerrainStore((s) => s.displayMode);
   const octaves = useTerrainStore((s) => s.octaves);
+  const amplitude = useTerrainStore((s) => s.amplitude);
   const frequency = useTerrainStore((s) => s.frequency);
   const blendRadius = useTerrainStore((s) => s.blendRadius);
   const valleyAltitude = useTerrainStore((s) => s.valleyAltitude);
   const peakAltitude = useTerrainStore((s) => s.peakAltitude);
   const detail = useTerrainStore((s) => s.detail);
+  const waterLevel = useTerrainStore((s) => s.waterLevel);
+  const cellSize = useTerrainStore((s) => s.cellSize);
   const [planeWidth, planeHeight] = useTerrainStore((s) => s.planeSize);
 
   const scaledMaxHeight = useMemo(() => {
@@ -63,6 +66,8 @@ export default function Terrain() {
       position={[0, -0.5, 0]}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
+      receiveShadow
+      castShadow
     >
       <planeGeometry args={[planeWidth, planeHeight, resolution, resolution]} />
       <customPlaneMaterial
@@ -73,12 +78,13 @@ export default function Terrain() {
         uDebugMode={displayMode}
         uOctaves={octaves}
         uFrequency={frequency}
-        uAmplitude={1.0 / frequency}
-        uCellSize={7.5 / frequency}
+        uAmplitude={amplitude / frequency}
+        uCellSize={(2.0 * Math.PI * cellSize) / frequency}
         uBlendRadius={blendRadius}
         uValleyAltitude={valleyAltitude * scaledMaxHeight}
         uPeakAltitude={peakAltitude * scaledMaxHeight}
         uDetail={detail}
+        uWaterLevel={waterLevel}
         wireframe={isWireframe}
       />
     </mesh>

@@ -15,6 +15,12 @@ export const PARAMETERS = [
     initialValue: 128,
   },
   {
+    identifier: "amplitude",
+    type: "float",
+    range: [0.1, 10.0],
+    initialValue: 1.0,
+  },
+  {
     identifier: "frequency",
     type: "float",
     range: [0.1, 50.0],
@@ -47,6 +53,18 @@ export const PARAMETERS = [
     type: "float",
     range: [0.0, 10.0],
     initialValue: 1.0,
+  },
+  {
+    identifier: "cellSize",
+    type: "float",
+    range: [0.0, 10.0],
+    initialValue: 1.0,
+  },
+  {
+    identifier: "waterLevel",
+    type: "float",
+    range: [-10.0, 10.0],
+    initialValue: 0.0,
   },
   {
     identifier: "displayMode",
